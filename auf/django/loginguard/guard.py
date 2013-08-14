@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from django.core.mail import mail_admins
 from django.utils.translation import ugettext as _
 
+from django.contrib import messages
+
 from .models import LoginEvent
 from .conf import LOGIN_GUARD_RETRY_POLICY, \
     LOGIN_GUARD_FREQUENCY_ALERT_ON, LOGIN_GUARD_FREQUENCY_ALERT
@@ -22,8 +24,8 @@ class StressLoginException(Exception):
         self.waiting_time = waiting_time
 
     def __unicode__(self):
-        return _('You tried to login %s times in %s. \
-                Please wait %s. Thank you.') % (
+        return _("""You tried to login %s times in %s.\
+ Please wait %s. Thank you.""") % (
             self.attempts,
             timedelta(seconds=self.period),
             timedelta(seconds=self.waiting_time),
@@ -65,10 +67,7 @@ class LoginGuard(object):
                     timedelta(seconds=period))
                 mail_admins(subject, message)
 
-    def check(self,):
-        """
-        Check if the login attempt respect the retry policy
-        """
+    def is_valid_according_policy(self):
         now = datetime.now()
         retry_policy = sorted(
             LOGIN_GUARD_RETRY_POLICY,
@@ -102,6 +101,19 @@ class LoginGuard(object):
                     period,
                     waiting_time)
 
+    def check(self,):
+        """
+        Check if the login attempt respect the retry policy
+        """
+        if self.request.method == 'POST':
+            self.is_valid_according_policy()
+
+    def notify_user(self,):
+        try:
+            self.is_valid_according_policy()
+        except StressLoginException, e:
+            messages.add_message(self.request, messages.ERROR, e)
+
     def log(self,):
         """
         Create a loginevent after login attempt result.
@@ -115,7 +127,6 @@ class LoginGuard(object):
         self.alert()
 
     def success(self,):
-        # AuthenticationEvent also register this
         LoginEvent(who=self.who, host=self.host, success=True).save()
 
     def fail(self,):

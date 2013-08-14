@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from django.contrib import messages
-
 
 from .guard import LoginGuard, StressLoginException
 from .conf import LOGIN_GUARD_RETRY_POLICY_ON
@@ -15,18 +13,20 @@ def login_guard(view_login):
         return view_login
 
     def _wrapped_view(request, *args, **kwargs):
-        from .views import redirect_to_login
         guard = LoginGuard(request)
         try:
             guard.check()  # prevent login perform
             response = view_login(request, *args, **kwargs)
             guard.log()
-            guard.check()  # recheck to warn user
-        except StressLoginException, e:
-            messages.add_message(request, messages.ERROR, e)
+            guard.notify_user()
+            return response
+        except StressLoginException:
+            guard.notify_user()
+            from django.contrib.auth.views import redirect_to_login
             redirect_field_name = kwargs.get('redirect_fieldname')
             redirect_to = request.REQUEST.get(redirect_field_name)
-            return redirect_to_login(request, next=redirect_to)
+            return redirect_to_login(
+                next=redirect_to,
+                redirect_field_name=redirect_field_name)
 
-        return response
     return _wrapped_view
