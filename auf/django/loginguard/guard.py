@@ -42,6 +42,9 @@ class LoginGuard(object):
     host = None
 
     def __init__(self, request):
+        if request.method != 'POST':
+            raise Exception('Guard works with POST')
+
         self.request = request
         self.who = self.request.POST.get('username')
         self.host = getattr(self.request.META, 'REMOTE_HOST', 'unknown')
@@ -105,21 +108,19 @@ class LoginGuard(object):
         """
         Check if the login attempt respect the retry policy
         """
-        if self.request.method == 'POST':
-            self.is_valid_according_policy()
+        self.is_valid_according_policy()
 
     def notify_user(self,):
-        try:
-            self.is_valid_according_policy()
-        except StressLoginException, e:
-            messages.add_message(self.request, messages.ERROR, e)
+        if self.request.user.is_anonymous():
+            try:
+                self.is_valid_according_policy()
+            except StressLoginException, e:
+                    messages.add_message(self.request, messages.ERROR, e)
 
     def log(self,):
         """
         Create a loginevent after login attempt result.
         """
-        if self.request.method != 'POST':
-            return
         if self.request.user.is_anonymous():
             self.fail()
         else:

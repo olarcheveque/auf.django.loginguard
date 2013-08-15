@@ -13,6 +13,9 @@ def login_guard(view_login):
         return view_login
 
     def _wrapped_view(request, *args, **kwargs):
+        if request.method not in ('POST', ):
+            return view_login(request, *args, **kwargs)
+
         guard = LoginGuard(request)
         try:
             guard.check()  # prevent login perform
