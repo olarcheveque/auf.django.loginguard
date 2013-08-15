@@ -8,8 +8,8 @@ from django.utils.translation import ugettext as _
 from django.contrib import messages
 
 from .models import LoginEvent
-from .conf import LOGIN_GUARD_RETRY_POLICY, \
-    LOGIN_GUARD_FREQUENCY_ALERT_ON, LOGIN_GUARD_FREQUENCY_ALERT
+from .conf import LOGIN_GUARD_RETRY_POLICY, LOGIN_GUARD_FREQUENCY_ALERT,\
+    LOGIN_GUARD_FREQUENCY_ALERT_ON
 
 
 class StressLoginException(Exception):
@@ -43,19 +43,18 @@ class LoginGuard(object):
 
     def __init__(self, request):
         if request.method != 'POST':
-            raise Exception('Guard works with POST')
+            raise Exception('Guard works with POST')  # pragma: no cover
 
         self.request = request
         self.who = self.request.POST.get('username')
-        self.host = getattr(self.request.META, 'REMOTE_HOST', 'unknown')
+        self.host = self.request.META.get('REMOTE_ADDR', 'unknown')
 
     def alert(self):
         """
         Send a mail alert to admins according frequency alerts.
         """
-        if LOGIN_GUARD_FREQUENCY_ALERT_ON is False:
+        if not LOGIN_GUARD_FREQUENCY_ALERT_ON:
             return
-
         now = datetime.now()
         for period, attempts in LOGIN_GUARD_FREQUENCY_ALERT:
             start_time = now - timedelta(seconds=period)

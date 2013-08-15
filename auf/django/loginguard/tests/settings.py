@@ -2,6 +2,8 @@
 
 import os
 
+ADMINS = ('sample@ut.org', )
+
 USE_I18N = False
 
 SECRET_KEY = 'secret'
@@ -34,5 +36,5 @@ LOGIN_GUARD_RETRY_POLICY = (
 LOGIN_GUARD_FREQUENCY_ALERT_ON = True
 
 LOGIN_GUARD_FREQUENCY_ALERT = (
-    (5,  3),  # alert if 5 attempts for same user within 3s
+    (60*2, 2),  # alert if 2 attempts for same user within 2min
     )
