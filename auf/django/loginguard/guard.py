@@ -8,8 +8,7 @@ from django.utils.translation import ugettext as _
 from django.contrib import messages
 
 from .models import LoginEvent
-from .conf import LOGIN_GUARD_RETRY_POLICY, LOGIN_GUARD_FREQUENCY_ALERT,\
-    LOGIN_GUARD_FREQUENCY_ALERT_ON
+import conf
 
 
 class StressLoginException(Exception):
@@ -53,10 +52,10 @@ class LoginGuard(object):
         """
         Send a mail alert to admins according frequency alerts.
         """
-        if not LOGIN_GUARD_FREQUENCY_ALERT_ON:
+        if not conf.LOGIN_GUARD_FREQUENCY_ALERT_ON:
             return
         now = datetime.now()
-        for period, attempts in LOGIN_GUARD_FREQUENCY_ALERT:
+        for period, attempts in conf.LOGIN_GUARD_FREQUENCY_ALERT:
             start_time = now - timedelta(seconds=period)
             nb_events = LoginEvent.objects.\
                 filter(who=self.who, when__gt=start_time).\
@@ -72,7 +71,7 @@ class LoginGuard(object):
     def is_valid_according_policy(self):
         now = datetime.now()
         retry_policy = sorted(
-            LOGIN_GUARD_RETRY_POLICY,
+            conf.LOGIN_GUARD_RETRY_POLICY,
             key=lambda rule: rule[0],
             reverse=True)
 

@@ -6,11 +6,20 @@ from django.core import mail
 from django.core.urlresolvers import reverse
 
 from auf.django.loginguard.models import LoginEvent
+import auf.django.loginguard.conf
 
 from .common import CommonTest
 
 
+class fakemodule(object):
+    LOGIN_GUARD_RETRY_POLICY_ON = False
+    LOGIN_GUARD_FREQUENCY_ALERT_ON = False
+
+
 class SettingTest(CommonTest):
+
+    def setUp(self):
+        super(SettingTest, self).setUp()
 
     def _try_patched_login_ko(self, url_name):
         data = {'username': self.username,
@@ -22,6 +31,8 @@ class SettingTest(CommonTest):
         """
         no timecheck if flag is off, no log
         """
+        auf.django.loginguard.conf = fakemodule
+        print auf.django.loginguard.conf
         response = self._try_patched_login_ko('retry_policy_off_login')
         self.assertEqual(response.status_code, 200)
         events = LoginEvent.objects.all()

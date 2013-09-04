@@ -2,14 +2,15 @@
 
 
 from .guard import LoginGuard, StressLoginException
-from .conf import LOGIN_GUARD_RETRY_POLICY_ON
+
+import conf
 
 
 def login_guard(view_login):
     """
     Decorator to apply prevent from brute force.
     """
-    if LOGIN_GUARD_RETRY_POLICY_ON is False:
+    if conf.LOGIN_GUARD_RETRY_POLICY_ON is False:
         return view_login
 
     def _wrapped_view(request, *args, **kwargs):
