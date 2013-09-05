@@ -4,10 +4,16 @@ import time
 
 from django.core import mail
 
+from auf.django.loginguard import conf
+
 from .common import CommonTest
 
 
 class AlertTest(CommonTest):
+
+    def setUp(self):
+        super(AlertTest, self).setUp()
+        self.assertEqual(conf.LOGIN_GUARD_FREQUENCY_ALERT_ON, True)
 
     def test_alert_on(self):
         # no alert

@@ -5,11 +5,16 @@ import time
 from django.core.urlresolvers import reverse
 
 from auf.django.loginguard.models import LoginEvent
+from auf.django.loginguard import conf
 
 from .common import CommonTest
 
 
 class LoginTest(CommonTest):
+
+    def setUp(self):
+        super(LoginTest, self).setUp()
+        self.assertEqual(conf.LOGIN_GUARD_RETRY_POLICY_ON, True)
 
     def test_basic_login_view(self):
         """
@@ -34,6 +39,29 @@ class LoginTest(CommonTest):
         response = self._try_login_ko()
         self.assertEqual(response.status_code, 200)
         #TODO check error message presence
+
+    def test_reactive_on_success(self):
+        t1 = time.time()
+        response = self._try_login_ko()
+        self.assertEqual(response.status_code, 200)
+        events = LoginEvent.objects.all().order_by('-id')
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].success, False)
+        time.sleep(1)
+
+        # reactive starting date
+        response = self._try_login_ok()
+        events = LoginEvent.objects.all().order_by('-id')
+        self.assertEqual(len(events), 2)
+        self.assertEqual(events[0].success, True)
+
+        # should be 302 if login start is not reactivated
+        response = self._try_login_ko()
+        self.assertEqual(response.status_code, 200)
+        t2 = time.time()
+        # ensure all sequence is done in less than 3s to valid test
+        delta = t2 - t1
+        self.assertTrue(delta < 3, True)
 
     def test_retry_policy(self):
         response = self._try_login_ko()

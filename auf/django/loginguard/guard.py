@@ -52,8 +52,6 @@ class LoginGuard(object):
         """
         Send a mail alert to admins according frequency alerts.
         """
-        if not conf.LOGIN_GUARD_FREQUENCY_ALERT_ON:
-            return
         now = datetime.now()
         for period, attempts in conf.LOGIN_GUARD_FREQUENCY_ALERT:
             start_time = now - timedelta(seconds=period)
@@ -84,11 +82,12 @@ class LoginGuard(object):
             filter(who=self.who, when__gt=start_time).\
             order_by('-when')
         events = []
-        for e in max_events:
-            if e.success:
-                break
-            else:
-                events.append(e)
+
+        try:
+            idx_success = [e.success for e in max_events].index(True)
+            events = max_events[:idx_success]
+        except:
+            events = max_events
 
         for period, attempts in retry_policy:
             check_before = timedelta(seconds=period)
@@ -123,7 +122,8 @@ class LoginGuard(object):
             self.fail()
         else:
             self.success()
-        self.alert()
+        if conf.LOGIN_GUARD_FREQUENCY_ALERT_ON:
+            self.alert()
 
     def success(self,):
         LoginEvent(who=self.who, host=self.host, success=True).save()

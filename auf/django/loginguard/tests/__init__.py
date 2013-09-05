@@ -1,3 +1,3 @@
 from .login import LoginTest
 from .alert import AlertTest
-#from .configuration import SettingTest
+from .configuration import SettingTest

@@ -1,0 +1,4 @@
+from settings import *
+
+LOGIN_GUARD_RETRY_POLICY_ON = False
+LOGIN_GUARD_FREQUENCY_ALERT_ON = False
